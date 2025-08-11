@@ -5,11 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AkreditasiResource\Pages;
 use App\Models\Akreditasi;
 use Filament\Forms;
-use Filament\Tables;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
 
@@ -36,11 +36,11 @@ class AkreditasiResource extends Resource
 
             Forms\Components\Section::make('Dokumen Identitas')->schema([
                 Forms\Components\FileUpload::make('foto_sk')
-                    ->label('Foto SK')->image()->disk('uploads_public')->directory('sk')->openable()->downloadable(),
+                    ->label('Foto SK')->image()->disk('public')->directory('akreditasi/sk')->openable()->downloadable(),
                 Forms\Components\FileUpload::make('foto_ktp')
-                    ->label('Foto KTP')->image()->disk('uploads_public')->directory('ktp')->openable()->downloadable(),
+                    ->label('Foto KTP')->image()->disk('public')->directory('akreditasi/ktp')->openable()->downloadable(),
                 Forms\Components\FileUpload::make('foto_kta')
-                    ->label('Foto KTA')->image()->disk('uploads_public')->directory('kta')->openable()->downloadable(),
+                    ->label('Foto KTA')->image()->disk('public')->directory('akreditasi/kta')->openable()->downloadable(),
             ])->columns(3),
 
             Forms\Components\Section::make('Kebanseran (banyak foto)')->schema([
@@ -50,8 +50,8 @@ class AkreditasiResource extends Resource
                         Forms\Components\FileUpload::make('path')
                             ->label('Foto')
                             ->image()
-                            ->disk('uploads_public')
-                            ->directory('kebanseran')
+                            ->disk('public')
+                            ->directory('akreditasi/kebanseran')
                             ->openable()
                             ->downloadable()
                             ->required(),
@@ -67,8 +67,8 @@ class AkreditasiResource extends Resource
                         Forms\Components\FileUpload::make('path')
                             ->label('Foto')
                             ->image()
-                            ->disk('uploads_public')
-                            ->directory('dokumentasi')
+                            ->disk('public')
+                            ->directory('akreditasi/dokumentasi')
                             ->openable()
                             ->downloadable()
                             ->required(),
@@ -81,46 +81,50 @@ class AkreditasiResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
-            // NO (index) — pakai rowIndex untuk nomor urut
-            TextColumn::make('no')->label('NO')
-                ->rowIndex()->alignCenter()->width('70px'),
+        return $table
+            // penting: supaya klik gambar tidak membuka halaman Edit
+            ->recordUrl(null)
+            ->columns([
+                TextColumn::make('no')->label('NO')
+                    ->rowIndex()->alignCenter()->width('70px'),
 
-            TextColumn::make('uploader_name')->label('NAMA')->searchable(),
-            TextColumn::make('uploader_email')->label('EMAIL')->wrap()->searchable(),
+                TextColumn::make('uploader_name')->label('NAMA')->searchable(),
+                TextColumn::make('uploader_email')->label('EMAIL')->wrap()->searchable(),
 
-            // KEANSORAN jadi 1 kolom multiline seperti gambar
-            TextColumn::make('keansoran')->label('KEANSORAN')
-                ->formatStateUsing(fn ($record) =>
-                    "Kota/Kabupaten: {$record->kota_kab}\nKecamatan: {$record->kecamatan}\nDesa/kelurahan: {$record->desa_kel}"
-                )
-                ->badge(false)->wrap()->toggleable(false),
+                // KEANSORAN (computed)
+                TextColumn::make('keansoran')->label('KEANSORAN')
+                    ->html() // izinkan HTML
+                    ->state(fn (Akreditasi $r) =>
+                        nl2br(e("Kota/Kabupaten: {$r->kota_kab}\nKecamatan: {$r->kecamatan}\nDesa/kelurahan: {$r->desa_kel}"))
+                    )
+                    ->wrap(),
 
-            ImageColumn::make('foto_sk')->label('FOTO SK')
-                ->disk('uploads_public')->square()->height(60),
-            ImageColumn::make('foto_ktp')->label('FOTO KTP')
-                ->disk('uploads_public')->square()->height(60),
-            ImageColumn::make('foto_kta')->label('FOTO KTA')
-                ->disk('uploads_public')->square()->height(60),
+                // Single images dengan zoom
+                ViewColumn::make('foto_sk')->label('FOTO SK')
+                    ->view('filament.tables.columns.image-zoom'),
+                ViewColumn::make('foto_ktp')->label('FOTO KTP')
+                    ->view('filament.tables.columns.image-zoom'),
+                ViewColumn::make('foto_kta')->label('FOTO KTA')
+                    ->view('filament.tables.columns.image-zoom'),
 
-            // LIST thumbnail kebanseran & dokumentasi: pakai ViewColumn custom agar grid seperti contoh
-            ViewColumn::make('kebanseran')->label('LIST FOTO KEBANSERAN')
-                ->view('filament.tables.columns.photos-grid')
-                ->state(fn ($record) => $record->kebanseranPhotos->pluck('path')->map(fn($p) => "/uploads/{$p}")->all()),
+                // Grid thumbnails + zoom
+                ViewColumn::make('kebanseran')->label('LIST FOTO KEBANSERAN')
+                    ->view('filament.tables.columns.photos-grid')
+                    ->state(fn ($record) => $record->kebanseranPhotos->pluck('path')->all()),
 
-            ViewColumn::make('dokumentasi')->label('LIST FOTO DOKUMENTASI')
-                ->view('filament.tables.columns.photos-grid')
-                ->state(fn ($record) => $record->dokumentasiPhotos->pluck('path')->map(fn($p) => "/uploads/{$p}")->all()),
-        ])
-        ->defaultSort('id', 'desc')
-        ->filters([])
-        ->actions([
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
-        ])
-        ->bulkActions([
-            Tables\Actions\DeleteBulkAction::make(),
-        ]);
+                ViewColumn::make('dokumentasi')->label('LIST FOTO DOKUMENTASI')
+                    ->view('filament.tables.columns.photos-grid')
+                    ->state(fn ($record) => $record->dokumentasiPhotos->pluck('path')->all()),
+            ])
+            ->defaultSort('id', 'desc')
+            ->filters([])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getPages(): array
@@ -132,4 +136,3 @@ class AkreditasiResource extends Resource
         ];
     }
 }
-
