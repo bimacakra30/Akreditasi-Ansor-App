@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->string('foto_sk')->nullable();
             $table->string('foto_ktp')->nullable();
             $table->string('foto_kta')->nullable();
+            $table->string('data_file')->nullable();
 
             $table->timestamps();
         });

@@ -3,14 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class DokumentasiPhoto extends Model
 {
     protected $fillable = ['akreditasi_id','path'];
 
-    public function akreditasi(): BelongsTo {
-        return $this->belongsTo(Akreditasi::class);
+    protected static function booted(): void
+    {
+        static::deleting(function (self $photo) {
+            if ($photo->path) {
+                Storage::disk('public')->delete($photo->path);
+            }
+        });
     }
 }
+
 

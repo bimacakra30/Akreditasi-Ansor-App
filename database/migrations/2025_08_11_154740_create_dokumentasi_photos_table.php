@@ -9,7 +9,7 @@ return new class extends Migration {
         Schema::create('dokumentasi_photos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('akreditasi_id')->constrained()->cascadeOnDelete();
-            $table->string('path'); // relatif dari /public/uploads
+            $table->string('path');
             $table->timestamps();
         });
     }
