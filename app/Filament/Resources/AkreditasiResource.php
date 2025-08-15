@@ -157,7 +157,7 @@ class AkreditasiResource extends Resource
             ])
             ->striped()
             ->columns([
-                
+
                 TextColumn::make('no')
                     ->label('NO')
                     ->rowIndex()
@@ -227,8 +227,8 @@ class AkreditasiResource extends Resource
 
                 TextColumn::make('data_file')
                     ->label("DATA ANGGOTA")
-                    ->formatStateUsing(fn($state) => $state ? 'Unduh File' : 'Tidak Ada')
-                    ->icon(fn($state) => $state ? 'heroicon-s-arrow-down-tray' : null)
+                    ->formatStateUsing(fn($state) => $state ? 'Lihat File' : 'Tidak Ada')
+                    ->icon(fn($state) => $state ? 'heroicon-s-eye' : null)
                     ->iconPosition(IconPosition::Before)
                     ->alignCenter()
                     ->badge()
